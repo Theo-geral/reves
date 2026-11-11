@@ -114,6 +114,10 @@ fun RevesApp(store: Store, writeRequest: MutableState<LocalDate?>) {
                     )
                     NavigationBarItem(
                         selected = tab == 2, onClick = { tab = 2 },
+                        icon = { Text("📊", fontSize = 20.sp) }, label = { Text("Stats") },
+                    )
+                    NavigationBarItem(
+                        selected = tab == 3, onClick = { tab = 3 },
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                         label = { Text("Réglages") },
                     )
@@ -124,6 +128,7 @@ fun RevesApp(store: Store, writeRequest: MutableState<LocalDate?>) {
                 when (tab) {
                     0 -> DreamsScreen(store, onWrite = { editingIso = it.toString() })
                     1 -> SleepScreen(store)
+                    2 -> StatsScreen(store)
                     else -> SettingsScreen(store)
                 }
             }
