@@ -1,6 +1,12 @@
 package com.theo.reves
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -92,9 +98,36 @@ fun StatsScreen(store: Store) {
             }
         }
 
+        ChartCard("Thèmes fréquents", "Tags les plus présents dans tes rêves sur la période") {
+            val counts = dIn.values.filter { it.dreamed }.flatMap { it.tags }
+                .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(8)
+            if (counts.isEmpty()) EmptyChart("Aucun tag sur cette période") else ThemeBars(counts.map { it.key to it.value })
+        }
+
         ChartCard("Rêve-t-on plus quand on dort bien ?", "Part des nuits avec rêve selon la qualité du sommeil") {
             val both = sIn.keys.count { dIn.containsKey(it) }
             if (both == 0) EmptyChart("Il faut des nuits renseignées dans les deux onglets") else DreamBySleepBars(dIn, sIn)
+        }
+    }
+}
+
+@Composable
+private fun ThemeBars(items: List<Pair<String, Int>>) {
+    val max = items.maxOf { it.second }.coerceAtLeast(1)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEach { (tag, n) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(tag, style = MaterialTheme.typography.labelMedium, maxLines = 1,
+                    modifier = Modifier.width(120.dp))
+                Box(Modifier.weight(1f).height(14.dp)) {
+                    Box(
+                        Modifier.fillMaxWidth(n.toFloat() / max).height(14.dp)
+                            .clip(RoundedCornerShape(4.dp)).background(DreamColor)
+                    )
+                }
+                Text("$n", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 8.dp).width(24.dp))
+            }
         }
     }
 }

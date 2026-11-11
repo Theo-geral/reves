@@ -12,8 +12,8 @@ import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
 
-    /** Mis à jour quand on arrive depuis le bouton « Oui » de la notification. */
-    private val writeRequest = mutableStateOf<LocalDate?>(null)
+    /** Mis à jour quand on arrive depuis « Oui » ou « Vocal » de la notification (date, enregistrer direct). */
+    private val writeRequest = mutableStateOf<Pair<LocalDate, Boolean>?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,9 +40,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        if (intent?.action == Notifications.ACTION_WRITE_DREAM) {
-            Notifications.cancel(this)
-            writeRequest.value = LocalDate.now()
+        when (intent?.action) {
+            Notifications.ACTION_WRITE_DREAM -> {
+                Notifications.cancel(this)
+                writeRequest.value = Pair(LocalDate.now(), false)
+            }
+            Notifications.ACTION_RECORD_DREAM -> {
+                Notifications.cancel(this)
+                writeRequest.value = Pair(LocalDate.now(), true)
+            }
         }
     }
 }

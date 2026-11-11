@@ -23,6 +23,7 @@ object Notifications {
     const val NOTIF_ID = 42
     const val ACTION_WRITE_DREAM = "com.theo.reves.WRITE_DREAM"
     const val ACTION_NO_DREAM = "com.theo.reves.NO_DREAM"
+    const val ACTION_RECORD_DREAM = "com.theo.reves.RECORD_DREAM"
 
     fun hasPermission(ctx: Context): Boolean =
         Build.VERSION.SDK_INT < 33 ||
@@ -52,6 +53,11 @@ object Notifications {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val yes = PendingIntent.getActivity(ctx, 1, yesIntent, flags)
 
+        val voiceIntent = Intent(ctx, MainActivity::class.java)
+            .setAction(ACTION_RECORD_DREAM)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val voice = PendingIntent.getActivity(ctx, 4, voiceIntent, flags)
+
         val noIntent = Intent(ctx, DreamActionReceiver::class.java).setAction(ACTION_NO_DREAM)
         val no = PendingIntent.getBroadcast(ctx, 2, noIntent, flags)
 
@@ -69,6 +75,7 @@ object Notifications {
             .setAutoCancel(true)
             .addAction(0, "Oui", yes)
             .addAction(0, "Non", no)
+            .addAction(0, "🎙 Vocal", voice)
             .build()
 
         try {

@@ -4,11 +4,17 @@ import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 
-/** Une nuit côté rêves : a-t-on rêvé, et la description éventuelle. */
-data class DreamEntry(val dreamed: Boolean, val text: String)
+/** Une nuit côté rêves : a-t-on rêvé, la description, les tags et la note vocale éventuelle. */
+data class DreamEntry(
+    val dreamed: Boolean,
+    val text: String,
+    val tags: List<String> = emptyList(),
+    val audio: String? = null,
+)
 
 /** Une nuit côté sommeil : qualité de 1 (très mal) à 5 (très bien) + note libre. */
 data class SleepEntry(val quality: Int, val note: String)
@@ -17,7 +23,7 @@ data class SleepEntry(val quality: Int, val note: String)
  * Stockage local (sur le téléphone uniquement), en JSON dans les SharedPreferences.
  * Les données sont incluses dans la sauvegarde automatique Android.
  */
-class Store private constructor(context: Context) {
+class Store private constructor(private val context: Context) {
 
     private val prefs = context.getSharedPreferences("reves", Context.MODE_PRIVATE)
 
@@ -35,11 +41,15 @@ class Store private constructor(context: Context) {
     @Synchronized
     fun setDream(date: LocalDate, entry: DreamEntry?) {
         val map = _dreams.value.toMutableMap()
+        val old = map[date]
+        if (old?.audio != null && old.audio != entry?.audio) AudioFiles.delete(context, old.audio)
         if (entry == null) map.remove(date) else map[date] = entry
         _dreams.value = map
         val json = JSONObject()
         map.forEach { (d, e) ->
-            json.put(d.toString(), JSONObject().put("dreamed", e.dreamed).put("text", e.text))
+            val o = JSONObject().put("dreamed", e.dreamed).put("text", e.text).put("tags", JSONArray(e.tags))
+            if (e.audio != null) o.put("audio", e.audio)
+            json.put(d.toString(), o)
         }
         prefs.edit().putString(KEY_DREAMS, json.toString()).apply()
     }
@@ -74,7 +84,11 @@ class Store private constructor(context: Context) {
             val out = HashMap<LocalDate, DreamEntry>()
             json.keys().forEach { key ->
                 val o = json.getJSONObject(key)
-                out[LocalDate.parse(key)] = DreamEntry(o.optBoolean("dreamed"), o.optString("text"))
+                val text = o.optString("text")
+                val arr = o.optJSONArray("tags")
+                val tags = if (arr != null) (0 until arr.length()).map { arr.getString(it) } else AutoTags.detect(text)
+                val audio = o.optString("audio").ifBlank { null }
+                out[LocalDate.parse(key)] = DreamEntry(o.optBoolean("dreamed"), text, tags, audio)
             }
             out
         } catch (e: Exception) {
